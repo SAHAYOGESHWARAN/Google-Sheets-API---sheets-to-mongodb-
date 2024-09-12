@@ -16,6 +16,12 @@ const authenticate = () => {
     }
 
     const { client_secret, client_id, redirect_uris } = credentials.installed;
+
+    // Check if redirect_uris is valid
+    if (!redirect_uris || !redirect_uris.length) {
+        throw new Error('Missing or invalid redirect_uris in credentials.json file.');
+    }
+
     const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
 
     if (fs.existsSync(TOKEN_PATH)) {
@@ -51,18 +57,6 @@ const getNewToken = (oAuth2Client) => {
     });
 };
 
-// Function to fetch data from Google Sheets
-const getGoogleSheetData = async (spreadsheetId, range) => {
-    const auth = authenticate();
-    const sheets = google.sheets({ version: 'v4', auth });
-    const res = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range,
-    });
-    return res.data.values;
-};
-
-// Function to append data to Google Sheets
 const appendGoogleSheetData = async (spreadsheetId, range, values) => {
     const auth = authenticate();
     const sheets = google.sheets({ version: 'v4', auth });
@@ -84,4 +78,4 @@ const appendGoogleSheetData = async (spreadsheetId, range, values) => {
     }
 };
 
-module.exports = { getGoogleSheetData, appendGoogleSheetData };
+module.exports = { appendGoogleSheetData };
