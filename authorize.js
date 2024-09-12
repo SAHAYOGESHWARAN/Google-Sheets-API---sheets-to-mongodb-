@@ -1,8 +1,12 @@
 const fs = require('fs');
 const { google } = require('googleapis');
-const TOKEN_PATH = 'token.json';
-const CREDENTIALS_PATH = 'credentials.json';
+const readline = require('readline');
 
+// Path to your credentials and token files
+const CREDENTIALS_PATH = 'credentials.json';
+const TOKEN_PATH = 'token.json';
+
+// Scopes for Google Sheets API
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 // Load client secrets from a local file
@@ -23,14 +27,14 @@ const authorize = (credentials, callback) => {
     });
 };
 
-// Get and store new token after prompting for user authorization
+// Get and store a new token after prompting for user authorization
 const getNewToken = (oAuth2Client, callback) => {
     const authUrl = oAuth2Client.generateAuthUrl({
         access_type: 'offline',
         scope: SCOPES,
     });
     console.log('Authorize this app by visiting this url:', authUrl);
-    const rl = require('readline').createInterface({
+    const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
     });
@@ -47,25 +51,8 @@ const getNewToken = (oAuth2Client, callback) => {
     });
 };
 
-// Append data to Google Sheets
-const appendGoogleSheetData = (spreadsheetId, range, values) => {
-    const credentials = loadCredentials();
-    authorize(credentials, (auth) => {
-        const sheets = google.sheets({ version: 'v4', auth });
-        const resource = { values };
-        sheets.spreadsheets.values.append({
-            spreadsheetId,
-            range,
-            valueInputOption: 'RAW',
-            resource,
-        }, (err, result) => {
-            if (err) {
-                console.error('Error appending data:', err);
-            } else {
-                console.log(`${result.data.updates.updatedCells} cells updated.`);
-            }
-        });
-    });
-};
-
-module.exports = { appendGoogleSheetData };
+// Execute authorization
+const credentials = loadCredentials();
+authorize(credentials, (auth) => {
+    console.log('Authorization successful');
+});
