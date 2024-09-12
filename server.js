@@ -7,6 +7,8 @@ const connectDB = require('./db');
 
 const app = express();
 app.use(bodyParser.json());
+
+// Connect to MongoDB
 connectDB();
 
 const spreadsheetId = 'your-google-spreadsheet-id';
