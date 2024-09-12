@@ -1,8 +1,11 @@
 const fs = require('fs');
 const { google } = require('googleapis');
-const TOKEN_PATH = 'token.json';
-const CREDENTIALS_PATH = 'credentials.json';
 
+// Load credentials from a local file
+const CREDENTIALS_PATH = 'credentials.json';
+const TOKEN_PATH = 'token.json';
+
+// Scopes for Google Sheets API
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 // Load client secrets from a local file
@@ -11,11 +14,10 @@ const loadCredentials = () => {
 };
 
 // Create an OAuth2 client with the loaded credentials
-const authorize = (credentials, callback) => {
-    const { client_secret, client_id, redirect_uris } = credentials.installed;
+const authorize = (callback) => {
+    const { client_secret, client_id, redirect_uris } = loadCredentials().installed;
     const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
 
-    // Check if we have previously stored token
     fs.readFile(TOKEN_PATH, (err, token) => {
         if (err) return getNewToken(oAuth2Client, callback);
         oAuth2Client.setCredentials(JSON.parse(token));
@@ -23,14 +25,15 @@ const authorize = (credentials, callback) => {
     });
 };
 
-// Get and store new token after prompting for user authorization
+// Get and store a new token after prompting for user authorization
 const getNewToken = (oAuth2Client, callback) => {
     const authUrl = oAuth2Client.generateAuthUrl({
         access_type: 'offline',
         scope: SCOPES,
     });
     console.log('Authorize this app by visiting this url:', authUrl);
-    const rl = require('readline').createInterface({
+    const readline = require('readline');
+    const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
     });
@@ -48,24 +51,26 @@ const getNewToken = (oAuth2Client, callback) => {
 };
 
 // Append data to Google Sheets
-const appendGoogleSheetData = (spreadsheetId, range, values) => {
-    const credentials = loadCredentials();
-    authorize(credentials, (auth) => {
-        const sheets = google.sheets({ version: 'v4', auth });
-        const resource = { values };
-        sheets.spreadsheets.values.append({
-            spreadsheetId,
-            range,
-            valueInputOption: 'RAW',
-            resource,
-        }, (err, result) => {
-            if (err) {
-                console.error('Error appending data:', err);
-            } else {
-                console.log(`${result.data.updates.updatedCells} cells updated.`);
-            }
+const appendGoogleSheetData = async (spreadsheetId, range, values) => {
+    try {
+        authorize(async (auth) => {
+            const sheets = google.sheets({ version: 'v4', auth });
+            const resource = {
+                values,
+            };
+            const result = await sheets.spreadsheets.values.append({
+                spreadsheetId,
+                range,
+                valueInputOption: 'RAW',
+                resource,
+            });
+            console.log('Data appended:', result.data);
         });
-    });
+    } catch (error) {
+        console.error('Error appending data:', error);
+    }
 };
 
-module.exports = { appendGoogleSheetData };
+module.exports = {
+    appendGoogleSheetData,
+};
