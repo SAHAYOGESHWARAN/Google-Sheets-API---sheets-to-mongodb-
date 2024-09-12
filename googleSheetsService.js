@@ -1,39 +1,27 @@
-const { google } = require('googleapis');
 const fs = require('fs');
-const readline = require('readline');
+const { google } = require('googleapis');
 const TOKEN_PATH = 'token.json';
+const CREDENTIALS_PATH = 'credentials.json';
+
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
+// Load client secrets from a local file and authenticate
 const authenticate = () => {
-    if (!fs.existsSync('credentials.json')) {
-        throw new Error('credentials.json file not found. Make sure you have downloaded it from Google Cloud Console.');
-    }
-
-    const credentials = JSON.parse(fs.readFileSync('credentials.json'));
-
-    if (!credentials.installed) {
-        throw new Error('Invalid credentials format. Make sure your credentials.json file contains "installed" section.');
-    }
-
+    const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH));
     const { client_secret, client_id, redirect_uris } = credentials.installed;
-
-    // Check if redirect_uris is valid
-    if (!redirect_uris || !redirect_uris.length) {
-        throw new Error('Missing or invalid redirect_uris in credentials.json file.');
-    }
-
     const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
 
+    // Check if we have previously stored a token.
     if (fs.existsSync(TOKEN_PATH)) {
-        const token = fs.readFileSync(TOKEN_PATH);
-        oAuth2Client.setCredentials(JSON.parse(token));
+        const token = JSON.parse(fs.readFileSync(TOKEN_PATH));
+        oAuth2Client.setCredentials(token);
     } else {
+        // Generate a new token if none exists
         getNewToken(oAuth2Client);
     }
     return oAuth2Client;
 };
 
-// Function to get new OAuth token
 const getNewToken = (oAuth2Client) => {
     const authUrl = oAuth2Client.generateAuthUrl({
         access_type: 'offline',
@@ -41,11 +29,10 @@ const getNewToken = (oAuth2Client) => {
     });
     console.log('Authorize this app by visiting this url:', authUrl);
 
-    const rl = readline.createInterface({
+    const rl = require('readline').createInterface({
         input: process.stdin,
         output: process.stdout,
     });
-
     rl.question('Enter the code from that page here: ', (code) => {
         oAuth2Client.getToken(code, (err, token) => {
             if (err) return console.error('Error retrieving access token', err);
@@ -57,19 +44,20 @@ const getNewToken = (oAuth2Client) => {
     });
 };
 
+// Function to add data to Google Sheets
 const appendGoogleSheetData = async (spreadsheetId, range, values) => {
     const auth = authenticate();
     const sheets = google.sheets({ version: 'v4', auth });
-    
+
     const resource = {
-        values,  // The data to append
+        values, // The data to append in rows
     };
 
     try {
         const result = await sheets.spreadsheets.values.append({
             spreadsheetId,
             range,
-            valueInputOption: 'RAW',  // You can use 'RAW' or 'USER_ENTERED' for formatting
+            valueInputOption: 'RAW', // You can use 'RAW' or 'USER_ENTERED'
             resource,
         });
         console.log(`${result.data.updates.updatedCells} cells updated.`);
