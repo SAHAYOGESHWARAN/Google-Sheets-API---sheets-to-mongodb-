@@ -12,16 +12,7 @@ app.use(bodyParser.json());
 const DataSchema = new mongoose.Schema({
     name: String,
     email: String,
-    phone: {
-        type: String,
-        required: true,
-        validate: {
-            validator: function(v) {
-                return /\d{10}/.test(v); // Adjust regex based on phone number format
-            },
-            message: props => `${props.value} is not a valid phone number!`
-        }
-    }
+    phone: String
 });
 const DataModel = mongoose.model('Data', DataSchema);
 
@@ -49,7 +40,7 @@ app.post('/add-data', async (req, res) => {
 
     try {
         // Append data to Google Sheets
-        await appendGoogleSheetData(process.env.SPREADSHEET_ID, 'Sheet1!A1', values);
+        await appendGoogleSheetData(process.env.SPREADSHEET_ID, 'Sheet1!A2', values);
 
         // Store data in MongoDB
         const newData = new DataModel({ name, email, phone });
