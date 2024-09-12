@@ -5,8 +5,23 @@ const TOKEN_PATH = 'token.json';
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 const authenticate = () => {
+    // Check if credentials.json exists
+    if (!fs.existsSync('credentials.json')) {
+        throw new Error('credentials.json file not found. Make sure you have downloaded it from Google Cloud Console.');
+    }
+
     const credentials = JSON.parse(fs.readFileSync('credentials.json'));
+
+    if (!credentials.installed) {
+        throw new Error('Invalid credentials format. Make sure your credentials.json file contains "installed" section.');
+    }
+
     const { client_secret, client_id, redirect_uris } = credentials.installed;
+
+    if (!client_secret || !client_id || !redirect_uris) {
+        throw new Error('Missing client information in credentials.json file.');
+    }
+
     const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
 
     // Check if we have previously stored a token.
