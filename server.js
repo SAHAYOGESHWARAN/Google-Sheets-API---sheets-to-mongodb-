@@ -39,7 +39,7 @@ app.post('/add-data', async (req, res) => {
     const values = [[name, email, phone]];
 
     try {
-        // Append data to Google Sheet
+        // Append data to Google Sheets
         await appendGoogleSheetData(process.env.SPREADSHEET_ID, 'Sheet1!A1', values);
 
         // Store data in MongoDB
