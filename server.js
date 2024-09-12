@@ -10,9 +10,9 @@ app.use(bodyParser.json());
 
 // MongoDB Schema and Model
 const DataSchema = new mongoose.Schema({
-    name: String,
-    email: String,
-    phone: String
+    name: { type: String, required: true },
+    email: { type: String, required: true, match: /.+@.+\..+/ },
+    phone: { type: String, required: true, match: /^[0-9]{10,15}$/ } // Updated regex for phone number
 });
 const DataModel = mongoose.model('Data', DataSchema);
 
@@ -31,8 +31,17 @@ const connectDB = async () => {
 };
 connectDB();
 
+// Middleware to handle validation errors
+const validateData = (req, res, next) => {
+    const { name, email, phone } = req.body;
+    if (!name || !email || !phone) {
+        return res.status(400).json({ error: 'All fields (name, email, phone) are required.' });
+    }
+    next();
+};
+
 // POST route to add data to Google Sheets and MongoDB
-app.post('/add-data', async (req, res) => {
+app.post('/add-data', validateData, async (req, res) => {
     const { name, email, phone } = req.body;
 
     // Data to add to Google Sheets (array of arrays)
