@@ -1,34 +1,30 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
-const { getGoogleSheetData } = require('./googleSheetsService');
-const SheetData = require('./models/SheetData');
+const { appendGoogleSheetData } = require('./googleSheetsService');
 const connectDB = require('./db');
 
 const app = express();
 app.use(bodyParser.json());
 
-// Connect to MongoDB
 connectDB();
 
-const spreadsheetId = 'your-google-spreadsheet-id';
-const range = 'Sheet1!A1:C100'; // Modify based on your sheet structure
+const PORT = process.env.PORT || 5000;
 
-app.get('/fetch-and-store', async (req, res) => {
+// Example route to append data to Google Sheets
+app.post('/add-to-sheet', async (req, res) => {
     try {
-        const sheetData = await getGoogleSheetData(spreadsheetId, range);
-        
-        // Assume sheetData is an array of rows
-        for (let row of sheetData) {
-            const [name, email, age] = row;
-            await SheetData.create({ name, email, age });
-        }
-        res.send('Data successfully stored in MongoDB');
+        const { spreadsheetId, range, values } = req.body;
+
+        // Call the append function
+        await appendGoogleSheetData(spreadsheetId, range, [values]);
+
+        res.status(200).json({ message: 'Data added to Google Sheet' });
     } catch (error) {
-        console.error('Error fetching or storing data:', error);
-        res.status(500).send('Error occurred');
+        console.error('Error adding data to Google Sheet:', error);
+        res.status(500).json({ error: 'Error adding data to Google Sheet' });
     }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
