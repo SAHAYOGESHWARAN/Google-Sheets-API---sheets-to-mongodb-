@@ -16,12 +16,12 @@ const authenticate = () => {
         const token = JSON.parse(fs.readFileSync(TOKEN_PATH));
         oAuth2Client.setCredentials(token);
     } else {
-        // Generate a new token if none exists
         getNewToken(oAuth2Client);
     }
     return oAuth2Client;
 };
 
+// Generate a new token if needed
 const getNewToken = (oAuth2Client) => {
     const authUrl = oAuth2Client.generateAuthUrl({
         access_type: 'offline',
@@ -44,20 +44,20 @@ const getNewToken = (oAuth2Client) => {
     });
 };
 
-// Function to add data to Google Sheets
+// Append data to Google Sheet
 const appendGoogleSheetData = async (spreadsheetId, range, values) => {
     const auth = authenticate();
     const sheets = google.sheets({ version: 'v4', auth });
 
     const resource = {
-        values, // The data to append in rows
+        values, // The data to append
     };
 
     try {
         const result = await sheets.spreadsheets.values.append({
             spreadsheetId,
             range,
-            valueInputOption: 'RAW', // You can use 'RAW' or 'USER_ENTERED'
+            valueInputOption: 'RAW', // 'RAW' or 'USER_ENTERED'
             resource,
         });
         console.log(`${result.data.updates.updatedCells} cells updated.`);
