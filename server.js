@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 require('dotenv').config();
-const { appendGoogleSheetData } = require('./googleSheetsService');
+const { appendGoogleSheetData, getGoogleSheetData } = require('./googleSheetsService');
 
 // Initialize express
 const app = express();
@@ -12,7 +12,7 @@ app.use(bodyParser.json());
 const DataSchema = new mongoose.Schema({
     name: String,
     email: String,
-    phone: String
+    phone: String,
 });
 const DataModel = mongoose.model('Data', DataSchema);
 
@@ -34,8 +34,6 @@ connectDB();
 // POST route to add data to Google Sheets and MongoDB
 app.post('/add-data', async (req, res) => {
     const { name, email, phone } = req.body;
-
-    // Data to add to Google Sheets (array of arrays)
     const values = [[name, email, phone]];
 
     try {
@@ -50,6 +48,17 @@ app.post('/add-data', async (req, res) => {
     } catch (error) {
         console.error('Error adding data:', error);
         res.status(500).json({ error: 'Failed to add data to Google Sheets or MongoDB.' });
+    }
+});
+
+// GET route to retrieve data from Google Sheets
+app.get('/get-data', async (req, res) => {
+    try {
+        const data = await getGoogleSheetData(process.env.SPREADSHEET_ID, 'Sheet1!A:C');
+        res.status(200).json({ data });
+    } catch (error) {
+        console.error('Error retrieving data:', error);
+        res.status(500).json({ error: 'Failed to retrieve data from Google Sheets.' });
     }
 });
 

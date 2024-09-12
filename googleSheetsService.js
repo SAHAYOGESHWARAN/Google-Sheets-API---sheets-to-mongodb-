@@ -1,11 +1,9 @@
 const fs = require('fs');
 const { google } = require('googleapis');
 
-// Load credentials from a local file
+// Load credentials and token
 const CREDENTIALS_PATH = 'credentials.json';
 const TOKEN_PATH = 'token.json';
-
-// Scopes for Google Sheets API
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 // Load client secrets from a local file
@@ -55,9 +53,7 @@ const appendGoogleSheetData = async (spreadsheetId, range, values) => {
     try {
         authorize(async (auth) => {
             const sheets = google.sheets({ version: 'v4', auth });
-            const resource = {
-                values,
-            };
+            const resource = { values };
             const result = await sheets.spreadsheets.values.append({
                 spreadsheetId,
                 range,
@@ -71,6 +67,26 @@ const appendGoogleSheetData = async (spreadsheetId, range, values) => {
     }
 };
 
+// Get data from Google Sheets
+const getGoogleSheetData = async (spreadsheetId, range) => {
+    try {
+        return new Promise((resolve, reject) => {
+            authorize(async (auth) => {
+                const sheets = google.sheets({ version: 'v4', auth });
+                const result = await sheets.spreadsheets.values.get({
+                    spreadsheetId,
+                    range,
+                });
+                resolve(result.data.values);
+            });
+        });
+    } catch (error) {
+        console.error('Error retrieving data:', error);
+        throw error;
+    }
+};
+
 module.exports = {
     appendGoogleSheetData,
+    getGoogleSheetData,
 };
