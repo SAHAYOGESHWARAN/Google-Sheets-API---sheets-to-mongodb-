@@ -5,7 +5,6 @@ const TOKEN_PATH = 'token.json';
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 const authenticate = () => {
-    // Check if credentials.json exists
     if (!fs.existsSync('credentials.json')) {
         throw new Error('credentials.json file not found. Make sure you have downloaded it from Google Cloud Console.');
     }
@@ -17,25 +16,18 @@ const authenticate = () => {
     }
 
     const { client_secret, client_id, redirect_uris } = credentials.installed;
-
-    if (!client_secret || !client_id || !redirect_uris) {
-        throw new Error('Missing client information in credentials.json file.');
-    }
-
     const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
 
-    // Check if we have previously stored a token.
     if (fs.existsSync(TOKEN_PATH)) {
         const token = fs.readFileSync(TOKEN_PATH);
         oAuth2Client.setCredentials(JSON.parse(token));
     } else {
-        // If there's no token, start the authorization process
         getNewToken(oAuth2Client);
     }
     return oAuth2Client;
 };
 
-// Function to get a new token if one doesn't exist
+// Function to get new OAuth token
 const getNewToken = (oAuth2Client) => {
     const authUrl = oAuth2Client.generateAuthUrl({
         access_type: 'offline',
@@ -52,7 +44,6 @@ const getNewToken = (oAuth2Client) => {
         oAuth2Client.getToken(code, (err, token) => {
             if (err) return console.error('Error retrieving access token', err);
             oAuth2Client.setCredentials(token);
-            // Store the token for future executions
             fs.writeFileSync(TOKEN_PATH, JSON.stringify(token));
             console.log('Token stored to', TOKEN_PATH);
             rl.close();
@@ -71,4 +62,26 @@ const getGoogleSheetData = async (spreadsheetId, range) => {
     return res.data.values;
 };
 
-module.exports = { getGoogleSheetData };
+// Function to append data to Google Sheets
+const appendGoogleSheetData = async (spreadsheetId, range, values) => {
+    const auth = authenticate();
+    const sheets = google.sheets({ version: 'v4', auth });
+    
+    const resource = {
+        values,  // The data to append
+    };
+
+    try {
+        const result = await sheets.spreadsheets.values.append({
+            spreadsheetId,
+            range,
+            valueInputOption: 'RAW',  // You can use 'RAW' or 'USER_ENTERED' for formatting
+            resource,
+        });
+        console.log(`${result.data.updates.updatedCells} cells updated.`);
+    } catch (err) {
+        console.error('Error appending data:', err);
+    }
+};
+
+module.exports = { getGoogleSheetData, appendGoogleSheetData };
