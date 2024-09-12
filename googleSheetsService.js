@@ -1,5 +1,6 @@
 const { google } = require('googleapis');
 const fs = require('fs');
+const readline = require('readline');
 const TOKEN_PATH = 'token.json';
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
@@ -13,12 +14,38 @@ const authenticate = () => {
         const token = fs.readFileSync(TOKEN_PATH);
         oAuth2Client.setCredentials(JSON.parse(token));
     } else {
-        // If not, guide the user to authorize
-        // Generate auth URL and handle token storage
+        // If there's no token, start the authorization process
+        getNewToken(oAuth2Client);
     }
     return oAuth2Client;
 };
 
+// Function to get a new token if one doesn't exist
+const getNewToken = (oAuth2Client) => {
+    const authUrl = oAuth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: SCOPES,
+    });
+    console.log('Authorize this app by visiting this url:', authUrl);
+
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+
+    rl.question('Enter the code from that page here: ', (code) => {
+        oAuth2Client.getToken(code, (err, token) => {
+            if (err) return console.error('Error retrieving access token', err);
+            oAuth2Client.setCredentials(token);
+            // Store the token for future executions
+            fs.writeFileSync(TOKEN_PATH, JSON.stringify(token));
+            console.log('Token stored to', TOKEN_PATH);
+            rl.close();
+        });
+    });
+};
+
+// Function to fetch data from Google Sheets
 const getGoogleSheetData = async (spreadsheetId, range) => {
     const auth = authenticate();
     const sheets = google.sheets({ version: 'v4', auth });
@@ -28,13 +55,5 @@ const getGoogleSheetData = async (spreadsheetId, range) => {
     });
     return res.data.values;
 };
-
-// Inside googleSheetsService.js
-oAuth2Client.getToken(code, (err, token) => {
-    if (err) return console.error('Error retrieving access token', err);
-    oAuth2Client.setCredentials(token);
-    fs.writeFileSync(TOKEN_PATH, JSON.stringify(token));
-    console.log('Token stored to', TOKEN_PATH);
-});
 
 module.exports = { getGoogleSheetData };
