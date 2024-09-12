@@ -29,4 +29,12 @@ const getGoogleSheetData = async (spreadsheetId, range) => {
     return res.data.values;
 };
 
+// Inside googleSheetsService.js
+oAuth2Client.getToken(code, (err, token) => {
+    if (err) return console.error('Error retrieving access token', err);
+    oAuth2Client.setCredentials(token);
+    fs.writeFileSync(TOKEN_PATH, JSON.stringify(token));
+    console.log('Token stored to', TOKEN_PATH);
+});
+
 module.exports = { getGoogleSheetData };
