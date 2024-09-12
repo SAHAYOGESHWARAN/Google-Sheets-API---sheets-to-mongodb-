@@ -1,7 +1,14 @@
 const mongoose = require('mongoose');
+require('dotenv').config(); // Load environment variables
+
 const connectDB = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI, {
+        const uri = process.env.MONGO_URI;
+        if (!uri) {
+            throw new Error('MONGO_URI is not defined in the .env file');
+        }
+
+        await mongoose.connect(uri, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
@@ -11,4 +18,5 @@ const connectDB = async () => {
         process.exit(1);
     }
 };
+
 module.exports = connectDB;
